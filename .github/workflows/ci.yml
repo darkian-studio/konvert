@@ -40,6 +40,8 @@ jobs:
     needs: verify
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -55,13 +57,19 @@ jobs:
       - run: flutter pub get
       - name: Build release APK
         run: flutter build apk --release
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: konvert-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
+      - name: Publish APK to GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          tag="v${version}"
+          apk="build/app/outputs/flutter-apk/app-release.apk"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" --clobber
+          else
+            gh release create "$tag" "$apk" --title "Konvert $tag" --generate-notes
+          fi
 
 # Green CI proves compilation, formatting, analysis and tests. It cannot prove
 # on-device behaviour, real-font rendering, or conversion correctness; those

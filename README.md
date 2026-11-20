@@ -9,5 +9,5 @@ empty) Tool screen. Each conversion tool gets its screen when it is built.
 ## Build
 
 GitHub Actions pins Flutter 3.47.7 and builds a release APK on every push and
-pull request. Download it from the `konvert-release-apk` artifact on the
-workflow run.
+pull request. On pushes to `main` the APK is published to the `v<pubspec version>`
+GitHub Release, replacing the asset on subsequent pushes of the same version.
